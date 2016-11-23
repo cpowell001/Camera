@@ -3,6 +3,7 @@ package cbpowell.camera.fragment;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
@@ -37,6 +38,7 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -51,23 +53,16 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import cbpowell.camera.R;
+import cbpowell.camera.activity.SettingsActivity;
 import cbpowell.camera.widget.AutoFitTextureView;
 
 public class CameraFragment extends BaseFragment implements
         ActivityCompat.OnRequestPermissionsResultCallback {
+
+    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int PERMISSION_REQUEST_CAMERA = 1001;
     private static final int MIN_TO_MS = 60 * 1000;
     private static final int DEFAULT_INTERVAL_MS = 10 * MIN_TO_MS;
-    private CountDownTimer _countDownTimer;
-    private int _timerInterval;
-
-
-    /**
-     * Conversion from screen rotation to JPEG orientation.
-     */
-    private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-    private static final int REQUEST_CAMERA_PERMISSION = 1;
-    private static final String FRAGMENT_DIALOG = "dialog";
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -145,6 +140,16 @@ public class CameraFragment extends BaseFragment implements
     };
 
     /**
+     * A {@link CountDownTimer} to count down until the next photo.
+     */
+    private CountDownTimer mCountDownTimer;
+
+    /**
+     * The time interval between photos, in milliseconds.
+     */
+    private int mTimerIntervalMs;
+
+    /**
      * ID of the current {@link CameraDevice}.
      */
     private String mCameraId;
@@ -153,6 +158,11 @@ public class CameraFragment extends BaseFragment implements
      * An {@link AutoFitTextureView} for camera preview.
      */
     private AutoFitTextureView mTextureView;
+
+    /**
+     * A {@link TextView} to display the time remaining until the next picture.
+     */
+    private TextView mTimerTextView;
 
     /**
      * A {@link ImageView} for taking pictures.
@@ -348,36 +358,6 @@ public class CameraFragment extends BaseFragment implements
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        String interval = PreferenceManager.getDefaultSharedPreferences(getActivity())
-                .getString(getString(R.string.prefs_key_photo_interval), "");
-
-        try {
-            _timerInterval = Integer.valueOf(interval) * MIN_TO_MS;
-        } catch (NumberFormatException e) {
-            _timerInterval = DEFAULT_INTERVAL_MS;
-            e.printStackTrace();
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case PERMISSION_REQUEST_CAMERA: {
-                if(!checkCameraPermission()) {
-                    toast(getString(R.string.error_permission_required_camera));
-                    getActivity().finish();
-                }
-                return;
-            }
-        }
-
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.fragment_camera, container, false);
@@ -385,13 +365,14 @@ public class CameraFragment extends BaseFragment implements
 
     @Override
     public void onViewCreated(final View view, Bundle savedInstanceState) {
+        mTimerTextView = (TextView) view.findViewById(R.id.camera_time_text_view);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.camera_texture_view);
         mPictureButton = (ImageView) view.findViewById(R.id.camera_picture_button);
         mPictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
-                if(_countDownTimer == null) {
+                if(mCountDownTimer == null) {
                     takePicture();
                     startCountDownTimer();
                 }
@@ -400,6 +381,28 @@ public class CameraFragment extends BaseFragment implements
                 }
             }
         });
+        view.findViewById(R.id.camera_settings_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(getActivity(), SettingsActivity.class));
+            }
+        });
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        String interval = PreferenceManager.getDefaultSharedPreferences(getActivity())
+                .getString(getString(R.string.prefs_key_photo_interval), "");
+
+        try {
+            mTimerIntervalMs = Integer.valueOf(interval) * MIN_TO_MS;
+        } catch (NumberFormatException e) {
+            mTimerIntervalMs = DEFAULT_INTERVAL_MS;
+            e.printStackTrace();
+        }
+
+        showTimeRemaining(mTimerIntervalMs);
     }
 
     @Override
@@ -429,6 +432,31 @@ public class CameraFragment extends BaseFragment implements
     public void onDestroy() {
         stopCountDownTimer();
         super.onDestroy();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CAMERA: {
+                if(!checkCameraPermission()) {
+                    toast(getString(R.string.error_permission_required_camera));
+                    getActivity().finish();
+                }
+                return;
+            }
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    private void showTimeRemaining(int timeRemainingMs) {
+        int seconds = timeRemainingMs / 1000;
+        int minutes = seconds / 60;
+        seconds = seconds % 60;
+        mTimerTextView.setText(String.format(
+                getString(R.string.message_camera_time_remaining),
+                minutes, seconds));
     }
 
     private boolean checkCameraPermission() {
@@ -990,10 +1018,11 @@ public class CameraFragment extends BaseFragment implements
 //        stopCountDownTimer();
         Log.d(LOG_TAG, "startCountDownTimer");
         mPictureButton.setImageResource(R.drawable.ic_action_highlight_remove);
-        _countDownTimer = new CountDownTimer(_timerInterval, 1000) {
+        mCountDownTimer = new CountDownTimer(mTimerIntervalMs, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 Log.d(LOG_TAG, "timer tick");
+                showTimeRemaining((int) millisUntilFinished);
             }
 
             @Override
@@ -1004,16 +1033,17 @@ public class CameraFragment extends BaseFragment implements
             }
         };
 
-        _countDownTimer.start();
+        mCountDownTimer.start();
     }
 
     private void stopCountDownTimer() {
         Log.d(LOG_TAG, "stopCountDownTimer");
+        showTimeRemaining(mTimerIntervalMs);
         mPictureButton.setImageResource(R.drawable.ic_image_camera_alt);
 
-        if(_countDownTimer != null) {
-            _countDownTimer.cancel();
-            _countDownTimer = null;
+        if(mCountDownTimer != null) {
+            mCountDownTimer.cancel();
+            mCountDownTimer = null;
         }
     }
 

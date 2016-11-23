@@ -6,6 +6,8 @@
     <string name="error_permission_required_write_storage">Write external storage permission required</string>
     <string name="error_permission_required_camera">Camera permission required</string>
 
+    <string name="message_camera_time_remaining">%1$dm %2$ds</string>
+
     <string name="prefs_key_screen_settings" translatable="false">prefs_key_screen_settings</string>
     <string name="prefs_key_photo_interval" translatable="false">prefs_key_photo_interval</string>
     <string name="prefs_title_photo_interval">Set a timer interval in minutes</string>

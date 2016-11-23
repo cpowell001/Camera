@@ -11,13 +11,41 @@
         android:layout_centerVertical="true"
         />
 
+    <LinearLayout
+        android:id="@+id/camera_button_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
+        android:layout_alignParentEnd="true"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/camera_time_text_view"
+            android:text="@string/message_camera_time_remaining"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/greyMedium"
+            android:textSize="16sp"
+            />
+
+        <ImageView
+            android:id="@+id/camera_picture_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:src="@drawable/ic_image_camera_alt"
+            />
+
+    </LinearLayout>
+
     <ImageView
-        android:id="@+id/camera_picture_button"
+        android:id="@+id/camera_settings_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
-        android:layout_centerVertical="true"
-        android:src="@drawable/ic_image_camera_alt"
-        android:layout_alignParentEnd="true"/>
-
+        android:src="@drawable/ic_navigation_more_vert"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentTop="true"
+        />
 </RelativeLayout>

@@ -1,12 +1,11 @@
 package cbpowell.camera.activity;
 
 import android.Manifest;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.View;
 
 import cbpowell.camera.R;
+import cbpowell.camera.fragment.CameraFragment;
 
 public class MainActivity extends BaseActivity {
     private static final int PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE = 1001;
@@ -19,6 +18,13 @@ public class MainActivity extends BaseActivity {
 
         _storagePermission = checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 PERMISSION_REQUEST_WRITE_EXTERNAL_STORAGE);
+
+        CameraFragment fragment = new CameraFragment();
+        fragment.setArguments(getIntent().getExtras());
+
+        getFragmentManager().beginTransaction()
+                .replace(R.id.camera_layout, fragment)
+                .commit();
     }
 
     @Override
@@ -40,20 +46,4 @@ public class MainActivity extends BaseActivity {
 
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
-
-    public void onClickStart(View view) {
-        startCameraActivity();
-    }
-
-    private void startCameraActivity() {
-
-        if(_storagePermission) {
-            startActivity(new Intent(this, CameraActivity.class));
-        }
-        else {
-            toast(getString(R.string.error_permission_required_write_storage));
-        }
-    }
-
-
 }
