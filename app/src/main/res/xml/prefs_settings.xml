@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:key="@string/prefs_key_screen_settings">
+
+    <EditTextPreference
+        android:key="@string/prefs_key_photo_interval"
+        android:defaultValue="10"
+        android:inputType="number"
+        android:persistent="true"
+        android:hint="@string/prefs_title_photo_interval"
+        android:title="@string/prefs_title_photo_interval" />
+
+</PreferenceScreen>
