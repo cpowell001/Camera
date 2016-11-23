@@ -2,6 +2,7 @@ package cbpowell.camera.fragment;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -27,6 +28,7 @@ import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
@@ -247,7 +249,8 @@ public class CameraFragment extends BaseFragment implements
         @Override
         public void onImageAvailable(ImageReader reader) {
             mFile = createImageFile();
-            mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            mBackgroundHandler.post(new ImageSaver(getActivity(),
+                    reader.acquireNextImage(), mFile));
         }
 
     };
@@ -464,9 +467,19 @@ public class CameraFragment extends BaseFragment implements
     }
 
     private File createImageFile() {
-        String timeStamp = String.valueOf(System.currentTimeMillis());//SimpleDateFormat.getDateTimeInstance().format(new Date());
+        File dir = new File(getActivity().getExternalFilesDir(null), "ChrisCamera");
+
+        if (! dir.exists()){
+            if (! dir.mkdirs()){
+                Log.e("Camera", "failed to create directory " + dir.getAbsolutePath());
+                return null;
+            }
+        }
+
+        String timeStamp = String.valueOf(System.currentTimeMillis());
+        //SimpleDateFormat.getDateTimeInstance().format(new Date());
         String imageName = "IMG_"+ timeStamp + ".jpg";
-        return new File(getActivity().getExternalFilesDir(null), imageName);
+        return new File(dir, imageName);
 
 //        // To be safe, you should check that the SDCard is mounted
 //        // using Environment.getExternalStorageState() before doing this.
@@ -908,6 +921,11 @@ public class CameraFragment extends BaseFragment implements
     private static class ImageSaver implements Runnable {
 
         /**
+         * A context.
+         */
+        private final Context mContext;
+
+        /**
          * The JPEG image
          */
         private final Image mImage;
@@ -916,7 +934,8 @@ public class CameraFragment extends BaseFragment implements
          */
         private final File mFile;
 
-        public ImageSaver(Image image, File file) {
+        public ImageSaver(Context context, Image image, File file) {
+            mContext = context;
             mImage = image;
             mFile = file;
         }
@@ -930,6 +949,7 @@ public class CameraFragment extends BaseFragment implements
             try {
                 output = new FileOutputStream(mFile);
                 output.write(bytes);
+                addImageToGallery(mContext, mFile);
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
@@ -942,6 +962,16 @@ public class CameraFragment extends BaseFragment implements
                     }
                 }
             }
+        }
+
+        private void addImageToGallery(Context context, File file) {
+            ContentValues values = new ContentValues();
+
+            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+            values.put(MediaStore.MediaColumns.DATA, file.getAbsolutePath());
+
+            context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
         }
 
     }
