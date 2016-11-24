@@ -152,6 +152,12 @@ public class CameraFragment extends BaseFragment implements
     private int mTimerIntervalMs;
 
     /**
+     * The flash enabled state.
+     * Set this to configure the default state the camera starts with.
+     */
+    private boolean mFlashEnabled = false;
+
+    /**
      * ID of the current {@link CameraDevice}.
      */
     private String mCameraId;
@@ -170,6 +176,11 @@ public class CameraFragment extends BaseFragment implements
      * A {@link ImageView} for taking pictures.
      */
     private ImageView mPictureButton;
+
+    /**
+     * A {@link ImageView} for toggling the flash.
+     */
+    private ImageView mFlashButton;
 
     /**
      * A {@link CameraCaptureSession } for camera preview.
@@ -370,6 +381,14 @@ public class CameraFragment extends BaseFragment implements
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         mTimerTextView = (TextView) view.findViewById(R.id.camera_time_text_view);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.camera_texture_view);
+        mFlashButton = (ImageView) view.findViewById(R.id.camera_flash_button);
+        setFlashEnabled(mFlashEnabled);
+//        mFlashButton.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                setFlashEnabled(!mFlashEnabled);
+//            }
+//        });
         mPictureButton = (ImageView) view.findViewById(R.id.camera_picture_button);
         mPictureButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -395,6 +414,7 @@ public class CameraFragment extends BaseFragment implements
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        mFile = createImageFile();
         String interval = PreferenceManager.getDefaultSharedPreferences(getActivity())
                 .getString(getString(R.string.prefs_key_photo_interval), "");
 
@@ -406,6 +426,7 @@ public class CameraFragment extends BaseFragment implements
         }
 
         showTimeRemaining(mTimerIntervalMs);
+        checkCameraPermission();
     }
 
     @Override
@@ -503,6 +524,17 @@ public class CameraFragment extends BaseFragment implements
 //        // Create a media file name
 //        return new File(mediaStorageDir.getPath() + File.separator +
 //                "IMG_"+ timeStamp + ".jpg");
+    }
+
+    /**
+     * Set the flash enabled state.
+     * TODO: this isn't working
+     * @param enabled Whether the flash is enabled.
+     */
+    private void setFlashEnabled(boolean enabled) {
+        mFlashEnabled = enabled;
+        mFlashButton.setImageResource(enabled ? R.drawable.ic_image_flash_on :
+                R.drawable.ic_image_flash_off);
     }
 
     /**
@@ -804,6 +836,7 @@ public class CameraFragment extends BaseFragment implements
                     CameraMetadata.CONTROL_AF_TRIGGER_START);
             // Tell #mCaptureCallback to wait for the lock.
             mState = STATE_WAITING_LOCK;
+            setAutoFlash(mPreviewRequestBuilder);
             mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback,
                     mBackgroundHandler);
         } catch (CameraAccessException e) {
@@ -909,9 +942,18 @@ public class CameraFragment extends BaseFragment implements
     }
 
     private void setAutoFlash(CaptureRequest.Builder requestBuilder) {
-        if (mFlashSupported) {
+
+        if(!checkCameraPermission()) {
+            return;
+        }
+
+        if (mFlashSupported && mFlashEnabled) {
             requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
                     CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH);
+        }
+        else {
+            requestBuilder.set(CaptureRequest.CONTROL_AE_MODE,
+                    CaptureRequest.CONTROL_AE_MODE_ON);
         }
     }
 

@@ -14,7 +14,7 @@
     <LinearLayout
         android:id="@+id/camera_button_layout"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_centerVertical="true"
         android:layout_alignParentEnd="true"
         android:gravity="center"
@@ -27,6 +27,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/greyMedium"
             android:textSize="16sp"
+            android:gravity="top|center_horizontal"
             />
 
         <ImageView
@@ -35,8 +36,8 @@
             android:layout_height="wrap_content"
             android:adjustViewBounds="true"
             android:src="@drawable/ic_image_camera_alt"
+            android:gravity="top|center_horizontal"
             />
-
     </LinearLayout>
 
     <ImageView
@@ -45,7 +46,19 @@
         android:layout_height="wrap_content"
         android:adjustViewBounds="true"
         android:src="@drawable/ic_navigation_more_vert"
-        android:layout_alignParentEnd="true"
         android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
         />
+
+
+    <ImageView
+        android:id="@+id/camera_flash_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:adjustViewBounds="true"
+        android:src="@drawable/ic_image_flash_off"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentEnd="true"
+        />
+
 </RelativeLayout>
